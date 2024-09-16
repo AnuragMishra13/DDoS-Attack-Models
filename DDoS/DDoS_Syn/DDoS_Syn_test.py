@@ -6,11 +6,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from joblib import load
 import pickle
-from sklearn.preprocessing import LabelEncoder, MaxAbsScaler
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, roc_curve, auc, precision_recall_curve
+import os
+import gc
+
+# Create results directory if it doesn't exist
+results_dir = 'Results'
+os.makedirs(results_dir, exist_ok=True)
 
 # Load and preprocess the test data
-df = pd.read_csv("Test Datasets/Syn.csv")
+df = pd.read_csv("Testing_datasets/Syn.csv")
 df = df.drop(columns=['Unnamed: 0', ' Timestamp', 'SimillarHTTP', 'Flow ID', ' Source IP', ' Destination IP'])
 df.columns = df.columns.str.strip()
 
@@ -20,9 +26,6 @@ df = df.dropna()
 # Encode labels
 label_encoder = LabelEncoder()
 df['Label'] = label_encoder.fit_transform(df['Label'])
-
-# Load the trained model
-model = load('Models/Syn_model.joblib')
 
 # Prepare features and labels
 X = df.iloc[:, :-1].values
@@ -34,20 +37,21 @@ with open('scaler.pkl', 'rb') as file:
 
 X = scaler.transform(X)
 
-# Make predictions
+# Load the CatBoost model
+model = load('catboost_model.pkl')
+
+# Predict labels and probabilities
 y_pred = model.predict(X)
+y_proba = model.predict_proba(X)[:, 1]  # Assuming binary classification, use probability of positive class
 
-# Display classification report
+# Print classification report
 print(classification_report(y, y_pred))
-
-# Predict probabilities for the positive class (class 1)
-y_proba = model.predict_proba(X)[:, 1]
 
 # Compute ROC curve and AUC score
 fpr, tpr, _ = roc_curve(y, y_proba)
 roc_auc = auc(fpr, tpr)
 
-# Plot the ROC curve
+# Plot ROC curve
 plt.figure()
 plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
 plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -57,15 +61,21 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic (ROC)')
 plt.legend(loc='lower right')
-plt.show()
+plt.savefig(f'{results_dir}/roc.png')
+plt.close()
 
-# Compute precision-recall curve
+# Compute Precision-Recall curve
 precision, recall, _ = precision_recall_curve(y, y_proba)
 
-# Plot the Precision-Recall curve
+# Plot Precision-Recall curve
 plt.figure()
 plt.plot(recall, precision, color='b', lw=2)
 plt.xlabel('Recall')
 plt.ylabel('Precision')
 plt.title('Precision-Recall Curve')
-plt.show()
+plt.savefig(f'{results_dir}/precision_recall_curve.png')
+plt.close()
+
+# Cleanup
+del model
+gc.collect()
