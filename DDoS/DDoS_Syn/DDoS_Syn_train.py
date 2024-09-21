@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import gc
 import os
@@ -7,12 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from imblearn.over_sampling import SMOTE
 from joblib import dump, load
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import (
-    ExtraTreesClassifier,
-    GradientBoostingClassifier,
-    RandomForestClassifier,
-    AdaBoostClassifier,
-)
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier
@@ -27,18 +23,19 @@ from sklearn.metrics import (
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Specify GPU device ID if needed
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
-results_dir = "Results"
+results_dir = "Results/Train Results"
 os.makedirs(results_dir, exist_ok=True)
 
 # Load pre-trained scaler and encoder
 scaler = load("../standard_scaler.joblib")
-encoder = load("../label_encoder.joblib")
+encoder = LabelEncoder()
 
 # Load the dataset
 df = pd.read_csv("../Training_Datasets/SYN.csv")
 
 # Encode labels
-df["Label"] = encoder.transform(df["Label"])
+df["Label"] = encoder.fit_transform(df["Label"])
+dump(encoder, "encoder(syn).joblib")
 
 # Prepare features (X) and labels (y)
 X = df.iloc[:, :-1].values
@@ -48,14 +45,18 @@ y = df.iloc[:, -1].values
 del df
 gc.collect()
 
-# Apply SMOTE for handling class imbalance
-smote = SMOTE(random_state=27)
-X, y = smote.fit_resample(X, y)
-
 # Split the dataset into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, random_state=42, test_size=0.33
 )
+
+# Apply SMOTE for handling class imbalance
+smote = SMOTE(random_state=27)
+X_train, y_train = smote.fit_resample(X_train, y_train)
+
+# X,y = smote.fit_resample(X,y)
+# np.save("X_train.npy",X)
+# np.save("y_train.npy" , y)
 
 X_train = scaler.transform(X_train)
 X_test = scaler.transform(X_test)
@@ -67,15 +68,15 @@ gc.collect()
 # Initialize classifiers with parallel processing and GPU support where applicable
 models = {
     "random_forest": RandomForestClassifier(n_jobs=-1),
-    "ada_boost": AdaBoostClassifier(),
     "xgboost": XGBClassifier(tree_method="gpu_hist", gpu_id=0, max_bin=256, n_jobs=-1),
     "lgbm": LGBMClassifier(
-        device="gpu", gpu_platform_id=0, gpu_device_id=0, num_threads=-1
+        device="cpu",
+        min_data_in_leaf=50,
+        max_bin=256,
     ),
     "catboost": CatBoostClassifier(
         task_type="GPU", devices="0", thread_count=-1, gpu_ram_part=0.95
     ),  # Set to 90% of your VRAM
-    "gradient_boosting": GradientBoostingClassifier(),
     "extra_trees": ExtraTreesClassifier(n_jobs=-1),
     "mlp": MLPClassifier(max_iter=1000),
 }

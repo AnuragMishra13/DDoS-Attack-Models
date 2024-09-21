@@ -1,0 +1,66 @@
+Classification Report for CatBoost
+              precision    recall  f1-score   support
+
+           0       0.99      0.94      0.96     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       0.99      0.97      0.98   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================
+Classification Report for ExtraTrees
+              precision    recall  f1-score   support
+
+           0       1.00      0.98      0.99     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       1.00      0.99      0.99   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================
+Classification Report for LGBM
+              precision    recall  f1-score   support
+
+           0       0.98      0.73      0.84     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       0.99      0.87      0.92   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================
+Classification Report for MLP
+              precision    recall  f1-score   support
+
+           0       0.98      0.98      0.98     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       0.99      0.99      0.99   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================
+Classification Report for RandomForest
+              precision    recall  f1-score   support
+
+           0       0.99      0.96      0.97     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       0.99      0.98      0.99   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================
+Classification Report for XGBoost
+              precision    recall  f1-score   support
+
+           0       0.99      0.89      0.94     35387
+           1       1.00      1.00      1.00   4002078
+
+    accuracy                           1.00   4037465
+   macro avg       0.99      0.95      0.97   4037465
+weighted avg       1.00      1.00      1.00   4037465
+
+=====================================================

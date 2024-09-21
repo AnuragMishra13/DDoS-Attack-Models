@@ -1,3 +1,4 @@
 *.csv
 Links.txt
 .venv
+*.npy
