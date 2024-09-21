@@ -1,55 +1,148 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import pickle
-from sklearn.preprocessing import LabelEncoder, MaxAbsScaler
-from imblearn.over_sampling import SMOTE
-from joblib import dump , parallel_backend
 import gc
-from sklearn.model_selection import GridSearchCV
-import optuna
-from sklearn.metrics import accuracy_score,f1_score
-from catboost import CatBoostClassifier, Pool
+import os
+import matplotlib.pyplot as plt
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import SMOTE
+from joblib import dump, load
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    GradientBoostingClassifier,
+    RandomForestClassifier,
+    AdaBoostClassifier,
+)
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
+from sklearn.metrics import (
+    classification_report,
+    roc_curve,
+    auc,
+    precision_recall_curve,
+)
 
-train_df = pd.read_csv("Syn.csv").drop(columns=['Unnamed: 0', ' Timestamp', 'SimillarHTTP', 'Flow ID', ' Source IP', ' Destination IP'])
-train_df.columns = train_df.columns.str.strip()
+# Set environment variables for GPU usage
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Specify GPU device ID if needed
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
+results_dir = "Results"
+os.makedirs(results_dir, exist_ok=True)
 
-train_df.replace([np.inf, -np.inf], np.nan, inplace=True)
-train_df = train_df.dropna()
+# Load pre-trained scaler and encoder
+scaler = load("../standard_scaler.joblib")
+encoder = load("../label_encoder.joblib")
 
-label_encoder = LabelEncoder()
-train_df['Label'] = label_encoder.fit_transform(train_df['Label'])
+# Load the dataset
+df = pd.read_csv("../Training_Datasets/SYN.csv")
 
-# Prepare features and labels
-X = train_df.iloc[:, :-1].values
-y = train_df.iloc[:, -1].values
+# Encode labels
+df["Label"] = encoder.transform(df["Label"])
+
+# Prepare features (X) and labels (y)
+X = df.iloc[:, :-1].values
+y = df.iloc[:, -1].values
+
+# Clean up dataframe to free memory
+del df
+gc.collect()
 
 # Apply SMOTE for handling class imbalance
 smote = SMOTE(random_state=27)
 X, y = smote.fit_resample(X, y)
 
-# Scale features
-scaler = MaxAbsScaler()
-X = scaler.fit_transform(X)
-
-del train_df
-gc.collect()
-
-with open('scaler.pkl', 'wb') as file:
-    pickle.dump(scaler, file)
-
-model = CatBoostClassifier(
-    learning_rate=0.2025501646477492,
-    depth=5,
-    n_estimators=258,
-    l2_leaf_reg=2.846674015362996,
-    boosting_type="Ordered",
-    task_type = 'GPU',
-    gpu_ram_part=0.9
+# Split the dataset into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state=42, test_size=0.33
 )
 
-model.fit(X,y)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
 
-dump(model,"catboost_model.pkl")
+# Clean up to free memory
+del X, y
+gc.collect()
+
+# Initialize classifiers with parallel processing and GPU support where applicable
+models = {
+    "random_forest": RandomForestClassifier(n_jobs=-1),
+    "ada_boost": AdaBoostClassifier(),
+    "xgboost": XGBClassifier(tree_method="gpu_hist", gpu_id=0, max_bin=256, n_jobs=-1),
+    "lgbm": LGBMClassifier(
+        device="gpu", gpu_platform_id=0, gpu_device_id=0, num_threads=-1
+    ),
+    "catboost": CatBoostClassifier(
+        task_type="GPU", devices="0", thread_count=-1, gpu_ram_part=0.95
+    ),  # Set to 90% of your VRAM
+    "gradient_boosting": GradientBoostingClassifier(),
+    "extra_trees": ExtraTreesClassifier(n_jobs=-1),
+    "mlp": MLPClassifier(max_iter=1000),
+}
+
+# Train and save models
+for model_name, model in models.items():
+    print(f"Training {model_name}")
+
+    # Fit the model to the training data
+    model.fit(X_train, y_train)
+
+    # Save the trained model to disk
+    dump(model, f"Models/{model_name}_model.joblib")
+    print(f"{model_name} model trained and saved as {model_name}_model.joblib")
+
+    # Clean up to free memory
+    del model
+    gc.collect()
+
+# Evaluate the models
+for model_name in models.keys():
+    # Load the model from file
+    loaded_model = load(f"Models/{model_name}_model.joblib")
+
+    # Make predictions on the test set
+    y_pred = loaded_model.predict(X_test)
+    y_proba = loaded_model.predict_proba(X_test)[:, 1]  # Probability of positive class
+
+    # Generate and print the classification report
+    report = classification_report(y_test, y_pred)
+    print(report)
+
+    # Save the classification report to a file
+    with open(f"{results_dir}/Classification_Report.txt", "a") as file:
+        file.write(f"Classification Report for {model_name}\n{report}\n{'=' * 53}\n")
+
+    # Compute ROC curve and AUC score
+    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot and save ROC curve
+    plt.figure()
+    plt.plot(
+        fpr, tpr, color="darkorange", lw=2, label="ROC curve (area = %0.2f)" % roc_auc
+    )
+    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver Operating Characteristic (ROC)")
+    plt.legend(loc="lower right")
+    plt.savefig(f"{results_dir}/{model_name}_roc.png")
+    plt.close()
+
+    # Compute Precision-Recall curve
+    precision, recall, _ = precision_recall_curve(y_test, y_proba)
+
+    # Plot and save Precision-Recall curve
+    plt.figure()
+    plt.plot(recall, precision, color="blue", lw=2)
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title("Precision-Recall Curve")
+    plt.savefig(f"{results_dir}/{model_name}_precision_recall_curve.png")
+    plt.close()
+
+    # Clean up to free memory
+    del loaded_model
+    gc.collect()

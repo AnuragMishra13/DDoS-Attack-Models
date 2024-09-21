@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,30 +7,16 @@ from imblearn.over_sampling import SMOTE
 from joblib import dump, parallel_backend
 import gc
 from sklearn.model_selection import GridSearchCV
-import optuna
 from sklearn.metrics import accuracy_score, f1_score
 from catboost import CatBoostClassifier, Pool
 from sklearn.model_selection import train_test_split
 
 """ Training Datasets """
 
-train_df = pd.read_csv("Syn.csv").drop(
-    columns=[
-        "Unnamed: 0",
-        " Timestamp",
-        "SimillarHTTP",
-        "Flow ID",
-        " Source IP",
-        " Destination IP",
-    ]
-)
-train_df.columns = train_df.columns.str.strip()
+train_df = pd.read_csv("Training_Datasets/Syn.csv")
 
-train_df.replace([np.inf, -np.inf], np.nan, inplace=True)
-train_df = train_df.dropna()
 
-label_encoder = LabelEncoder()
-train_df["Label"] = label_encoder.fit_transform(train_df["Label"])
+train_df["Label"] = encoder.fit_transform(train_df["Label"])
 
 # Prepare features and labels
 X = train_df.iloc[:, :-1].values
