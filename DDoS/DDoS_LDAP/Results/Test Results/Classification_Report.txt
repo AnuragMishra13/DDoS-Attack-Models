@@ -1,0 +1,22 @@
+Classification Report for CatBoost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       1.00      1.00      1.00   1872139
+
+    accuracy                           1.00   1928445
+   macro avg       1.00      1.00      1.00   1928445
+weighted avg       1.00      1.00      1.00   1928445
+
+=====================================================
+Classification Report for ExtraTrees
+              precision    recall  f1-score   support
+
+           0       1.00      0.90      0.95     56306
+           1       1.00      1.00      1.00   1872139
+
+    accuracy                           1.00   1928445
+   macro avg       1.00      0.95      0.97   1928445
+weighted avg       1.00      1.00      1.00   1928445
+
+=====================================================

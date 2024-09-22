@@ -9,7 +9,6 @@ from sklearn.metrics import (
     precision_recall_curve,
 )
 import os
-import gc
 
 # Create results directory if it doesn't exist
 results_dir = "Results/Test Results"
@@ -26,16 +25,9 @@ df["Label"] = encoder.transform(df["Label"])
 X = df.iloc[:, :-1].values
 y = df.iloc[:, -1].values
 
-del df
-gc.collect()
-
 # Load and apply the scaler
 scaler = load("../standard_scaler.joblib")
-
 X = scaler.transform(X)
-
-# np.save("X_test.npy",X)
-# np.save("y_test.npy",y)
 
 models = {
     "CatBoost": "Models/catboost_model.joblib",
@@ -46,17 +38,17 @@ models = {
     "XGBoost": "Models/xgboost_model.joblib",
 }
 
-
 for model_name, model_path in models.items():
-
-    # Load the CatBoost model
-    model = load(f"{model_path}")
+    try:
+        # Load the model
+        model = load(model_path)
+    except FileNotFoundError:
+        print(f"Model file {model_path} not found. Skipping...")
+        continue
 
     # Predict labels and probabilities
     y_pred = model.predict(X)
-    y_proba = model.predict_proba(X)[
-        :, 1
-    ]  # Assuming binary classification, use probability of positive class
+    y_proba = model.predict_proba(X)[:, 1]  # Assuming binary classification
 
     # Generate and print the classification report
     report = classification_report(y, y_pred)
@@ -96,7 +88,3 @@ for model_name, model_path in models.items():
     plt.title("Precision-Recall Curve")
     plt.savefig(f"{results_dir}/{model_name}_precision_recall_curve.png")
     plt.close()
-
-    # Cleanup
-    del model
-    gc.collect()
