@@ -1,123 +1,148 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-import pandas as pd
 import numpy as np
-import pickle
-import os
-from sklearn.preprocessing import MaxAbsScaler, LabelEncoder
-from imblearn.over_sampling import SMOTE
-from joblib import dump
+import pandas as pd
 import gc
-from catboost import CatBoostClassifier
-from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier,AdaBoostClassifier
+import os
+import matplotlib.pyplot as plt
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import SMOTE
+from joblib import dump, load
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
-from scipy.sparse import csr_matrix
+from catboost import CatBoostClassifier
+from sklearn.metrics import (
+    classification_report,
+    roc_curve,
+    auc,
+    precision_recall_curve,
+)
 
-# Function to optimize memory usage by changing data types
-def optimize_memory(df):
-    for col in df.select_dtypes(include=["float64"]).columns:
-        df[col] = df[col].astype("float32")
-    for col in df.select_dtypes(include=["int64"]).columns:
-        df[col] = df[col].astype("int32")
-    return df
+# Set environment variables for GPU usage
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Specify GPU device ID if needed
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
-# Create a directory to save models
-os.makedirs("Models", exist_ok=True)
+results_dir = "Results/Train Results"
+os.makedirs(results_dir, exist_ok=True)
 
-# Process data in chunks
-chunk_size = 500000
-chunks = pd.read_csv("../DrDoS_UDP.csv", chunksize=chunk_size)
+# Load pre-trained scaler and encoder
+scaler = load("../standard_scaler.joblib")
+encoder = LabelEncoder()
 
-processed_chunks = []
-minority_class_records = []
-label_encoder = LabelEncoder()  # Initialize LabelEncoder
-
-for chunk in chunks:
-    # Drop unnecessary columns and handle missing values
-    chunk = chunk.drop(columns=["Unnamed: 0", " Timestamp", "SimillarHTTP", "Flow ID", " Source IP", " Destination IP"])
-    chunk.columns = chunk.columns.str.strip()
-    chunk.replace([np.inf, -np.inf], np.nan, inplace=True)
-    chunk = chunk.dropna()
-
-    # Optimize memory usage
-    chunk = optimize_memory(chunk)
-
-    # Collect records of the minority class
-    minority_class = chunk["Label"].value_counts().idxmin()
-    minority_records = chunk[chunk["Label"] == minority_class]
-    minority_class_records.append(minority_records)
-
-    # Append processed chunk to list
-    processed_chunks.append(chunk)
-
-# Concatenate all processed chunks into a single DataFrame
-df_all = pd.concat(processed_chunks, ignore_index=True)
-
-# Fit label encoder on all labels
-label_encoder.fit(df_all["Label"])
+# Load the dataset
+df = pd.read_csv("../Training_Datasets/UDP.csv")
 
 # Encode labels
-df_all["Label"] = label_encoder.transform(df_all["Label"])
+df["Label"] = encoder.fit_transform(df["Label"])
+dump(encoder, "encoder(udp).joblib")
 
-# Combine minority class records with a random sample of the majority class
-minority_records = pd.concat(minority_class_records, ignore_index=True)
-minority_records["Label"] = label_encoder.transform(minority_records["Label"])  # Ensure minority records are encoded
+# Prepare features (X) and labels (y)
+X = df.iloc[:, :-1].values
+y = df.iloc[:, -1].values
 
-majority_records = df_all[df_all["Label"] != minority_class]
-majority_sample = majority_records.sample(n=len(minority_records) * 1, random_state=27)  # Adjust the multiplier as needed
-
-# Combine and shuffle the final dataset
-train_df = pd.concat([minority_records, majority_sample], ignore_index=True)
-train_df = train_df.sample(frac=1, random_state=27).reset_index(drop=True)  # Shuffle
-
-# Prepare features and labels
-X = train_df.drop(columns=["Label"]).values
-y = train_df["Label"].values
-
-# Free memory
-del train_df
+# Clean up dataframe to free memory
+del df
 gc.collect()
+
+# Split the dataset into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state=42, test_size=0.33
+)
 
 # Apply SMOTE for handling class imbalance
 smote = SMOTE(random_state=27)
-X_smote, y_train = smote.fit_resample(X, y)
+X_train, y_train = smote.fit_resample(X_train, y_train)
 
-# Convert to sparse matrix to save memory
-X_sparse = csr_matrix(X_smote)
+# X,y = smote.fit_resample(X,y)
+# np.save("X_train.npy",X)
+# np.save("y_train.npy" , y)
 
-# Free memory
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Clean up to free memory
 del X, y
 gc.collect()
 
-# Scale features
-scaler = MaxAbsScaler()
-X_train = scaler.fit_transform(X_sparse)
-
-# Save scaler and label encoder
-with open("scaler.pkl", "wb") as file:
-    pickle.dump(scaler, file)
-with open("label_encoder.pkl", "wb") as file:
-    pickle.dump(label_encoder, file)
-
+# Initialize classifiers with parallel processing and GPU support where applicable
 models = {
-    "CatBoost": CatBoostClassifier(learning_rate=0.1, depth=6, iterations=500, random_state=27),
-    "RandomForest": RandomForestClassifier(n_estimators=100, random_state=27),
-    "XGBoost": XGBClassifier(learning_rate=0.1, n_estimators=100, random_state=27),
-    "GradientBoosting": GradientBoostingClassifier(learning_rate=0.1, n_estimators=100, random_state=27),
-    "LightGBM": LGBMClassifier(learning_rate=0.1, n_estimators=100, random_state=27),
-    "AdaBoost": AdaBoostClassifier(n_estimators=100, random_state=27)
+    "random_forest": RandomForestClassifier(n_jobs=-1),
+    "xgboost": XGBClassifier(tree_method="gpu_hist", gpu_id=0, max_bin=256, n_jobs=-1),
+    "lgbm": LGBMClassifier(
+        device="cpu",
+        min_data_in_leaf=50,
+        max_bin=256,
+    ),
+    "catboost": CatBoostClassifier(
+        task_type="GPU", devices="0", thread_count=-1, gpu_ram_part=0.95
+    ),  # Set to 90% of your VRAM
+    "extra_trees": ExtraTreesClassifier(n_jobs=-1),
 }
 
+# Train and save models
 for model_name, model in models.items():
-    # Train model
+    print(f"Training {model_name}")
+
+    # Fit the model to the training data
     model.fit(X_train, y_train)
-    
-    # Save the model
-    model_path = os.path.join("Models", f"{model_name}.joblib")
-    dump(model, model_path)
-    
-    # Free memory
+
+    # Save the trained model to disk
+    dump(model, f"Models/{model_name}_model.joblib")
+    print(f"{model_name} model trained and saved as {model_name}_model.joblib")
+
+    # Clean up to free memory
     del model
+    gc.collect()
+
+# Evaluate the models
+for model_name in models.keys():
+    # Load the model from file
+    loaded_model = load(f"Models/{model_name}_model.joblib")
+
+    # Make predictions on the test set
+    y_pred = loaded_model.predict(X_test)
+    y_proba = loaded_model.predict_proba(X_test)[:, 1]  # Probability of positive class
+
+    # Generate and print the classification report
+    report = classification_report(y_test, y_pred)
+    print(report)
+
+    # Save the classification report to a file
+    with open(f"{results_dir}/Classification_Report.txt", "a") as file:
+        file.write(f"Classification Report for {model_name}\n{report}\n{'=' * 53}\n")
+
+    # Compute ROC curve and AUC score
+    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot and save ROC curve
+    plt.figure()
+    plt.plot(
+        fpr, tpr, color="darkorange", lw=2, label="ROC curve (area = %0.2f)" % roc_auc
+    )
+    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver Operating Characteristic (ROC)")
+    plt.legend(loc="lower right")
+    plt.savefig(f"{results_dir}/{model_name}_roc.png")
+    plt.close()
+
+    # Compute Precision-Recall curve
+    precision, recall, _ = precision_recall_curve(y_test, y_proba)
+
+    # Plot and save Precision-Recall curve
+    plt.figure()
+    plt.plot(recall, precision, color="blue", lw=2)
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title("Precision-Recall Curve")
+    plt.savefig(f"{results_dir}/{model_name}_precision_recall_curve.png")
+    plt.close()
+
+    # Clean up to free memory
+    del loaded_model
     gc.collect()

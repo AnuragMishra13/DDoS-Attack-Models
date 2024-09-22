@@ -20,7 +20,7 @@ df = pd.read_csv("../Testing_datasets/SYN.csv")
 
 # Encode labels
 encoder = load("encoder(syn).joblib")
-df["Label"] = encoder.fit_transform(df["Label"])
+df["Label"] = encoder.transform(df["Label"])
 
 # Prepare features and labels
 X = df.iloc[:, :-1].values

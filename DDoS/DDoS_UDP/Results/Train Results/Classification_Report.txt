@@ -1,0 +1,66 @@
+Classification Report for random_forest
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       1.00      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
+Classification Report for xgboost
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      1.00       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       1.00      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
+Classification Report for lgbm
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       1.00      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
+Classification Report for catboost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       1.00      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
+Classification Report for extra_trees
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       1.00      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
+Classification Report for mlp
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      0.99       667
+           1       1.00      1.00      1.00   1021056
+
+    accuracy                           1.00   1021723
+   macro avg       0.99      1.00      1.00   1021723
+weighted avg       1.00      1.00      1.00   1021723
+
+=====================================================
