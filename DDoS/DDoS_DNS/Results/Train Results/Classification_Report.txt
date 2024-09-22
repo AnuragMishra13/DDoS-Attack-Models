@@ -1,0 +1,55 @@
+Classification Report for random_forest
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00      1098
+           1       1.00      1.00      1.00   1619869
+
+    accuracy                           1.00   1620967
+   macro avg       1.00      1.00      1.00   1620967
+weighted avg       1.00      1.00      1.00   1620967
+
+=====================================================
+Classification Report for xgboost
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      1.00      1098
+           1       1.00      1.00      1.00   1619869
+
+    accuracy                           1.00   1620967
+   macro avg       1.00      1.00      1.00   1620967
+weighted avg       1.00      1.00      1.00   1620967
+
+=====================================================
+Classification Report for lgbm
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00      1098
+           1       1.00      1.00      1.00   1619869
+
+    accuracy                           1.00   1620967
+   macro avg       1.00      1.00      1.00   1620967
+weighted avg       1.00      1.00      1.00   1620967
+
+=====================================================
+Classification Report for catboost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00      1098
+           1       1.00      1.00      1.00   1619869
+
+    accuracy                           1.00   1620967
+   macro avg       1.00      1.00      1.00   1620967
+weighted avg       1.00      1.00      1.00   1620967
+
+=====================================================
+Classification Report for extra_trees
+              precision    recall  f1-score   support
+
+           0       1.00      0.99      1.00      1098
+           1       1.00      1.00      1.00   1619869
+
+    accuracy                           1.00   1620967
+   macro avg       1.00      1.00      1.00   1620967
+weighted avg       1.00      1.00      1.00   1620967
+
+=====================================================
