@@ -1,0 +1,11 @@
+Classification Report for CatBoostClassifier
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       564
+           1       1.00      1.00      1.00   1307930
+
+    accuracy                           1.00   1308494
+   macro avg       1.00      1.00      1.00   1308494
+weighted avg       1.00      1.00      1.00   1308494
+
+=====================================================

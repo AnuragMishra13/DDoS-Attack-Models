@@ -71,10 +71,9 @@ def initialize_classifiers():
         dict: A dictionary containing the initialized classifiers.
     """
     models = {
-        # "catboost": CatBoostClassifier(
-        #     task_type="GPU", devices="0", thread_count=-1, gpu_ram_part=0.95
-        # ),  # Set to 95% of your VRAM
-        "extra_trees": ExtraTreesClassifier(n_jobs=-1),
+        "catboost": CatBoostClassifier(
+            task_type="GPU", devices="0", thread_count=-1, gpu_ram_part=0.95
+        ),  # Set to 95% of your VRAM
     }
     return models
 
