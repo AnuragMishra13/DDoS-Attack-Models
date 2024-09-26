@@ -27,7 +27,7 @@ df = pd.read_csv("../Training_datasets/NTP.csv")
 # Label encoding
 encoder = LabelEncoder()
 df["Label"] = encoder.fit_transform(df["Label"])
-dump(encoder, "encoder(netbios).joblib")
+dump(encoder, "encoder(ntp).joblib")
 
 # Separate features and labels
 X = df.iloc[:, :-1].values

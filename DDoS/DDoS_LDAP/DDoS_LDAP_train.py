@@ -34,7 +34,7 @@ df = pd.read_csv("../Training_Datasets/LDAP.csv")
 
 # Encode labels
 df["Label"] = encoder.fit_transform(df["Label"])
-dump(encoder, "encoder(udp).joblib")
+dump(encoder, "encoder(ldap).joblib")
 
 # Prepare features (X) and labels (y)
 X = df.iloc[:, :-1].values

@@ -14,7 +14,7 @@ import os
 def load_data(file_path):
     # Load and preprocess the test data
     df = pd.read_csv(file_path)
-    encoder = load("encoder(udp).joblib")
+    encoder = load("encoder(ldap).joblib")
     df["Label"] = encoder.transform(df["Label"])
     return df
 
