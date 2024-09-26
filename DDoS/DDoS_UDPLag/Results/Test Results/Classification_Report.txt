@@ -1,0 +1,55 @@
+Classification Report for CatBoost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       0.95      1.00      0.97      1873
+
+    accuracy                           1.00     58179
+   macro avg       0.97      1.00      0.99     58179
+weighted avg       1.00      1.00      1.00     58179
+
+=====================================================
+Classification Report for CatBoost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       0.95      1.00      0.97      1873
+
+    accuracy                           1.00     58179
+   macro avg       0.97      1.00      0.99     58179
+weighted avg       1.00      1.00      1.00     58179
+
+=====================================================
+Classification Report for ExtraTrees
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       0.89      0.97      0.93      1873
+
+    accuracy                           1.00     58179
+   macro avg       0.95      0.98      0.96     58179
+weighted avg       1.00      1.00      1.00     58179
+
+=====================================================
+Classification Report for CatBoost
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       0.92      1.00      0.96      1873
+
+    accuracy                           1.00     58179
+   macro avg       0.96      1.00      0.98     58179
+weighted avg       1.00      1.00      1.00     58179
+
+=====================================================
+Classification Report for ExtraTrees
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00     56306
+           1       0.89      0.97      0.93      1873
+
+    accuracy                           1.00     58179
+   macro avg       0.95      0.98      0.96     58179
+weighted avg       1.00      1.00      1.00     58179
+
+=====================================================
