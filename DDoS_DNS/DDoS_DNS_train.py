@@ -22,6 +22,7 @@ from sklearn.metrics import (
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Specify GPU device ID if needed
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
+# Create results directory
 results_dir = "Results/Train Results"
 os.makedirs(results_dir, exist_ok=True)
 
@@ -53,10 +54,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 smote = SMOTE(random_state=27)
 X_train, y_train = smote.fit_resample(X_train, y_train)
 
-# X,y = smote.fit_resample(X,y)
-# np.save("X_train.npy",X)
-# np.save("y_train.npy" , y)
-
+# Transform data using scaler
 X_train = scaler.transform(X_train)
 X_test = scaler.transform(X_test)
 
